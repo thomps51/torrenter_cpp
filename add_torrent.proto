@@ -1,0 +1,39 @@
+@0xab84735a24c2ab3e;
+
+# Add torrent file/folder renaming ability
+
+struct AddTorrent
+{
+    downloadFolder @0 :Text = "";
+    downloadOptions @1 :List(DownloadOption);
+    seedingOption @2 :Seeding;
+    location :union
+    {
+        magnetUrl @3 :Text;
+        torrentUrl @4 :Text;
+        torrentFile @5 :Data;
+    }
+    enum DownloadOption
+    {
+        keepOnlyLargestFile @0;
+    }
+    struct Seeding
+    {
+        option :union
+        {
+            forever @0 :Void;
+            duration @1 :Text;
+            multiplier @2 :UInt32;
+        }
+    }
+}
+
+struct BaseMessage
+{
+    data :union
+    {
+        empty @0 : Void;
+# list of all possible message types
+        addTorrent @1 :AddTorrent;
+    }
+}
