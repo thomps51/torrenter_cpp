@@ -30,23 +30,32 @@ namespace torrenter
     class torrent_manager
     {
     public:
+        using callback_type =
+            std::function<void(boost::shared_ptr<libtorrent::torrent_info const>)>;
+        
         torrent_manager(std::filesystem::path const & _temp_dir);
 
         void
-        add(std::string_view const & _magnet_url,
-            std::function<void(boost::shared_ptr<libtorrent::torrent_info const> _info)>
-                _callback);
+        add(std::string_view const & _magnet_url, callback_type const & _callback);
 
     private:
-        boost::chrono::hours max_seed_time_;
-        size_t max_seed_ratio_;
-        libtorrent::session session_;
-        std::string temp_dir_;
-        std::vector<boost::thread> torrent_threads_; // this does not get cleaned up yet
+        size_t                     max_seed_ratio_;
+        boost::chrono::hours       max_seed_time_;
+        libtorrent::session        session_;
+        std::string                temp_dir_;
 
+        struct torrent_info
+        {
+            callback_type                           callback;
+            std::optional<boost::chrono::hours>     max_seed_time;
+            std::optional<unsigned>                 seeding_ratio;
+            boost::chrono::system_clock::time_point seed_start_time;
+        };
+
+        std::unordered_map<boost::uint32_t, torrent_info> torrents_; 
+    
         void
-        thread_proc(libtorrent::torrent_handle _handle,
-            std::function<void(boost::shared_ptr<libtorrent::torrent_info const> _info)> _callback);
+        main_thread();
     };
 }
 #endif
