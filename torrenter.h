@@ -9,6 +9,7 @@
     Author: Tony Thompson <ajthomps51@gmail.com>
 */
 
+#include <mutex>
 #include <string>
 #include <string_view>
 #include "add_torrent.proto.h"
@@ -36,5 +37,6 @@ namespace torrenter
         std::string                  main_dir_;
         std::string                  temp_dir_;
         ::torrenter::torrent_manager manager_;
+        std::mutex                   system_mutex_;
     };
 }

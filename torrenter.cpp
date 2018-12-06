@@ -93,13 +93,19 @@ namespace torrenter
                 std::string dest(destination.string());
                 boost::replace_all(dest, "'", "'\"'\"'");
 
-
+                path file_path = destination / source.filename();
+                if (std::filesystem::is_regular_file(file_path))
+                {
+                    std::cout << "file already exists, skipping copy" << std::endl;
+                    return;
+                }
                 std::string command("cp '" + source.string() + "' '" + dest + "'");
                 std::cout << "running copy command: " << command << std::endl;
                 // This is stupid from a security standpoint.  I am accepting arbitrary strings from
                 // messages and adding them as part of a raw command.  I need to change this,
                 // especially when I move away from IPC.  Maybe std::filesystem will work correctly
                 // with mounted network drives one day...
+                std::lock_guard<std::mutex> _(system_mutex_); // don't flood the IO
                 system(command.c_str());
                 //std::string permissions("chmod -R 777 " + destination.string());
                 // this does not work with mounted network filesysem
