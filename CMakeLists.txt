@@ -29,7 +29,8 @@ link_directories(/home/athomps/libraries/libtorrent/bin/gcc-7/debug/threading-mu
 add_executable(torrentor 
     main.cpp
     torrenter.cpp
-    torrent_manager.cpp 
+    torrent_manager.cpp
+    vpn.cpp
     add_torrent.proto.c++)
 
 target_link_libraries(torrentor ${CONAN_LIBS} -ltorrent ${Boost_SYSTEM_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_PROCESS_LIBRARY} -lstdc++fs ${nng_LIBRARY} -lcapnp -lkj nng::nng)

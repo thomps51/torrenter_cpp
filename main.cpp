@@ -8,68 +8,49 @@
     Author: Tony Thompson <ajthomps51@gmail.com>
 */
 
-#include <stdexcept>
 #include <iostream>
 #include <string_view>
 #include <filesystem>
-#include <regex>
-#include <boost/process.hpp>
+#include <csignal>
 #include <boost/thread.hpp>
-#include "config.h"
-#include "torrent_manager.h"
-
+#include <capnp/message.h>
+#include <capnp/serialize-packed.h>
 #include <nng/nng.h>
 #include <nng/protocol/pipeline0/pull.h>
 #include <nng/protocol/pipeline0/push.h>
-#include <capnp/message.h>
-#include <capnp/serialize-packed.h>
-
+#include <tsl/utility/scope_guard.h>
 #include "add_torrent.proto.h"
-
+#include "config.h"
+#include "torrent_manager.h"
 #include "torrenter.h"
+#include "vpn.h"
 
-void
-fatal(const char * func, int rv)
+namespace
 {
-    fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
-    exit(1);
+    bool shutdown_flag = false;
 }
 
-
 void
-vpn_thread()
+fatal(const char * _func, int _retval)
 {
-    auto start = std::chrono::system_clock::now();
-    bool first(true);
-    for (;;)
-    {
-        //int const result(
-        //    boost::process::system("ip netns exec piavpn openvpn --config /etc/openvpn/nyc.ovpn",
-        //        boost::process::std_out > "piavpn.out", boost::process::std_err > "piavpn.err"));
-        if (!first && std::chrono::system_clock::now() - start < std::chrono::seconds(5))
-        {
-            std::cerr << "openvpn failed within 5 seconds of previous failure: check logs"
-                      << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
-        first = false;
-        start = std::chrono::system_clock::now();
-        int const result(
-            boost::process::system("openvpn --config /etc/openvpn/nyc.ovpn",
-                boost::process::std_out > "piavpn.out", boost::process::std_err > "piavpn.err"));
-        std::cout << "VPN process has exited, retrying after 1 second" << std::endl;
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-    }
+    fprintf(stderr, "%s: %s\n", _func, nng_strerror(_retval));
+    exit(1);
 }
 
 int
 main(int argc, char ** argv)
 {
     using namespace std::literals;
-    //try
-    //{
+    auto const catch_signal{[](int _signal) { shutdown_flag = true; }};
+    signal(SIGINT, catch_signal); 
+    signal(SIGTERM, catch_signal); 
+    signal(SIGHUP, catch_signal); 
+    signal(SIGKILL, catch_signal); 
+    try
+    {
+        torrenter::vpn vpn("/etc/openvpn/nyc.ovpn");
+        vpn.start();
         // setup vpn
-        auto vpn_watcher{boost::thread(vpn_thread)}; 
         boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
         // setup torrentor
         // These should be config options
@@ -90,9 +71,25 @@ main(int argc, char ** argv)
         {
             char * buf = NULL;
             size_t sz;
-            if ((rv = nng_recv(sock, &buf, &sz, NNG_FLAG_ALLOC)) != 0)
+            //if ((rv = nng_recv(sock, &buf, &sz, NNG_FLAG_ALLOC)) != 0)
+            //{
+            //    fatal("nng_recv", rv);
+            //}
+            while (0 != (rv = nng_recv(sock, &buf, &sz, NNG_FLAG_ALLOC | NNG_FLAG_NONBLOCK)) &&
+                   !shutdown_flag)
             {
-                fatal("nng_recv", rv);
+                if (rv == NNG_EAGAIN)
+                {
+                    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+                }
+                else
+                {
+                    fatal("nng_recv", rv);
+                }
+            }
+            if (shutdown_flag)
+            {
+                break;
             }
             // do i break strict aliasing right here? probably
             kj::ArrayPtr<capnp::word> words(
@@ -121,11 +118,10 @@ main(int argc, char ** argv)
             }
             nng_free(buf, sz);
         }
-        vpn_watcher.join();
-    //}
-    //catch(...)
-    //{
-    //    std::cout << "Caught exception, exiting" << std::endl;
-    //}
+    }
+    catch(std::exception & _exception)
+    {
+        std::cout << "Caught exception, exiting: " << _exception.what() << std::endl;
+    }
     return 0;
 }
