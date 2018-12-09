@@ -18,7 +18,6 @@
 #include <nng/nng.h>
 #include <nng/protocol/pipeline0/pull.h>
 #include <nng/protocol/pipeline0/push.h>
-#include <tsl/utility/scope_guard.h>
 #include "add_torrent.proto.h"
 #include "config.h"
 #include "torrent_manager.h"
@@ -42,18 +41,15 @@ main(int argc, char ** argv)
 {
     using namespace std::literals;
     auto const catch_signal{[](int _signal) { shutdown_flag = true; }};
-    signal(SIGINT, catch_signal); 
-    signal(SIGTERM, catch_signal); 
-    signal(SIGHUP, catch_signal); 
-    signal(SIGKILL, catch_signal); 
+    signal(SIGINT,  catch_signal);
+    signal(SIGTERM, catch_signal);
+    //signal(SIGHUP,  catch_signal);
+    //signal(SIGKILL, catch_signal);
     try
     {
         torrenter::vpn vpn("/etc/openvpn/nyc.ovpn");
         vpn.start();
-        // setup vpn
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-        // setup torrentor
-        // These should be config options
+        std::cout << "VPN connected" << std::endl;
         torrenter::torrenter manager{
             "/media/TonyDisk/shares/USB_Storage/TonyDisk/", "/tmp/TVshows"};
         // listen for messages
@@ -71,10 +67,6 @@ main(int argc, char ** argv)
         {
             char * buf = NULL;
             size_t sz;
-            //if ((rv = nng_recv(sock, &buf, &sz, NNG_FLAG_ALLOC)) != 0)
-            //{
-            //    fatal("nng_recv", rv);
-            //}
             while (0 != (rv = nng_recv(sock, &buf, &sz, NNG_FLAG_ALLOC | NNG_FLAG_NONBLOCK)) &&
                    !shutdown_flag)
             {

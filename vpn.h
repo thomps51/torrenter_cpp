@@ -35,7 +35,9 @@ namespace torrenter
         stop();
 
     private:
-        boost::thread thread_;
+        std::string       ip_address_;
+        boost::thread     thread_;
+        std::atomic<bool> running_;
         std::atomic<bool> stopped_;
 
         void

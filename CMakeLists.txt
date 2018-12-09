@@ -19,6 +19,7 @@ link_directories(/home/athomps/libs/lib)
 
 find_package(Boost COMPONENTS system chrono thread REQUIRED)
 find_package(nng CONFIG REQUIRED)
+find_package(CURL REQUIRED)
 
 #include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 #conan_basic_setup()
@@ -33,5 +34,5 @@ add_executable(torrentor
     vpn.cpp
     add_torrent.proto.c++)
 
-target_link_libraries(torrentor ${CONAN_LIBS} -ltorrent ${Boost_SYSTEM_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_PROCESS_LIBRARY} -lstdc++fs ${nng_LIBRARY} -lcapnp -lkj nng::nng)
+target_link_libraries(torrentor ${CONAN_LIBS} -ltorrent ${Boost_SYSTEM_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_PROCESS_LIBRARY} -lstdc++fs ${nng_LIBRARY} -lcapnp -lkj nng::nng -lcurl)
 target_include_directories(torrentor PRIVATE "/home/athomps/dev")
