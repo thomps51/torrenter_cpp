@@ -4,7 +4,7 @@ BitTorrent client that listens for messages sent by other programs and downloads
 
 Why make something like this?  This is my answer to the more monolithic solutions that end up doing nothing quite exactly how I want it when it comes to automatic managing of torrent downloading, and also lack programmability.
 
-The idea is to make a distributed torrent downloading system, where there is this core piece and there are other separate programs that send it torrents to download, like perhaps from an RSS feed, webscraping, or any other sort of automated gathering process using any desired tools or languages.   All these other programs have to do is send a Cap'n Proto message (which has many language bindings) to the core piece and it will download the torrent to the desired destination and manage it's seeding.
+The idea is to make a distributed torrent downloading system, where there is this core piece and there are other separate programs that send it torrents to download, like perhaps from an RSS feed, webscraping, or any other sort of automated gathering process using any desired tools or languages.   All these other programs have to do is send a Cap'n Proto message (which has many language bindings) to the core piece and it will download the torrent to the desired destination and manage its seeding.
 
 One could imagine this being the core piece of a program with an actual GUI where information and commands are sent via Cap'n Proto messages between the GUI and core, also enabling it to be easily managed from afar.
 
